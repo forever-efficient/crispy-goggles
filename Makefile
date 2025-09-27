@@ -3,7 +3,7 @@
 setup:
 	python -m venv .venv
 	@echo "Activate with: source .venv/bin/activate"
-	pip install -r requirements.txt
+	. .venv/bin/activate && pip install -e .[dev]
 
 install-browsers:
 	@echo "Installing Playwright browsers"

@@ -5,7 +5,8 @@ python -m venv .venv
 echo "Activating virtualenv: source .venv/bin/activate"
 # Install required packages
 . .venv/bin/activate
-pip install -r requirements.txt
+# Install project in editable mode with dev extras
+python -m pip install -e '.[dev]'
 # Install Playwright browsers (non-interactive)
 playwright install
 

@@ -1,0 +1,9 @@
+Remove requirements.txt and consolidate dependencies in pyproject.toml
+
+Removed the repository-level `requirements.txt` and updated docs, scripts, and CI to use
+`pyproject.toml` for dependency management. Updated Playwright cache keys in workflows to
+hash `pyproject.toml`, changed `scripts/setup.sh` to install the project in editable mode
+with dev extras, and added a short Quick setup and FAQ to README. Also updated the
+`.github/copilot-instructions.md` and `setup.cfg` accordingly.
+
+This simplifies onboarding and keeps packaging aligned between local development and CI.

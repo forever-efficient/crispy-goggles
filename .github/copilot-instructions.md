@@ -19,7 +19,7 @@
 # create venv and activate
 python -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt  # if present; otherwise pip install behave playwright
+make setup
 playwright install  # install browsers
 ```
 
@@ -54,8 +54,7 @@ behave
 # Integration and external dependencies
 
 - External services: none by design. Tests exercise `https://the-internet.herokuapp.com/` in existing scenarios.
-- Runtime dependencies: Behave, Playwright and their transitive packages. The repo does not include a `requirements.txt`; if you add one, pin versions.
- - Runtime dependencies: Behave, Playwright and their transitive packages. A minimal `requirements.txt` is provided at the repo root.
+ - Runtime dependencies: Behave, Playwright and their transitive packages. Dependencies are declared in `pyproject.toml` and installed via `make setup`.
  - Use the included `Makefile` and `scripts/setup.sh` to standardize environment setup. `make setup` will create a venv and install pinned packages; `make install-browsers` will run `playwright install`.
 
 ## CI layout (GitHub Actions)
@@ -93,11 +92,11 @@ Note: The README contains step-by-step instructions for adding the required repo
 
 # Where to leave notes for humans
 
-- Edit the `README.md` with setup steps if you add a `requirements.txt` or change how tests are run.
+- Edit the `README.md` with setup steps if you change how tests are run; dependencies are declared in `pyproject.toml` and installed via `make setup`.
 - If you add cross-cutting changes (e.g., change the way Playwright is launched), update `features/environment.py` and mention it in the README and this file.
 
 ---
-If anything above is unclear or you'd like the instructions expanded (for example adding a sample `requirements.txt` or a Makefile), tell me which area to expand and I'll update this file.
+If anything above is unclear or you'd like the instructions expanded (for example adding more setup steps), tell me which area to expand and I'll update this file.
 
 ## CI refresh job and notifications
 
@@ -111,7 +110,7 @@ If anything above is unclear or you'd like the instructions expanded (for exampl
 
 - Quick local checklist to reproduce CI failures:
 	1. Create and activate a venv: `python -m venv .venv && source .venv/bin/activate`
-	2. Install deps: `pip install -r requirements.txt`
+	2. Install deps: `make setup`
 	3. (If failing Playwright runs) install browsers: `playwright install`
 	4. Run unit tests: `pytest -q`
 	5. Run Behave: `behave -f pretty`

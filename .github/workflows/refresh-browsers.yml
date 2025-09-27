@@ -21,14 +21,14 @@ jobs:
           path: |
             ~/.cache/ms-playwright
             ~/.cache/playwright
-          key: ${{ runner.os }}-playwright-${{ hashFiles('requirements.txt') }}
+          key: ${{ runner.os }}-playwright-${{ hashFiles('pyproject.toml') }}
           restore-keys: |
             ${{ runner.os }}-playwright-
       - name: Install dependencies
         run: |
           python -m venv .venv
           . .venv/bin/activate
-          pip install -r requirements.txt
+          python -m pip install -e '.[dev]'
       - name: Install Playwright browsers (if cache miss)
         if: steps.cache-playwright.outputs.cache-hit != 'true'
         run: |
@@ -46,7 +46,7 @@ jobs:
           path: |
             ~/.cache/ms-playwright
             ~/.cache/playwright
-          key: ${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.version }}-${{ hashFiles('requirements.txt') }}
+          key: ${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.version }}-${{ hashFiles('pyproject.toml') }}
           restore-keys: |
             ${{ runner.os }}-playwright-
       - name: Confirm cache updated
