@@ -10,10 +10,9 @@ authors = [ { name = "forever-efficient" } ]
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-	"behave>=1.2,<2",
 	"playwright>=1.35,<2",
 	"typing-extensions>=4.0"
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=7.0"]
+dev = ["pytest>=7.0", "pytest-playwright>=0.7"]
