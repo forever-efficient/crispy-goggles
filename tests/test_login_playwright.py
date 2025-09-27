@@ -1,9 +1,11 @@
 import os
 import pytest
 
+from utils.playwright_healing import find_locator_with_healing
+
 
 @pytest.mark.local
-def test_login_x_com(page: "playwright.sync_api.Page"):
+def test_login_x_com(page):
     """Login to x.com using Playwright and environment credentials.
 
     This mirrors the previous Behave scenario but uses Playwright's Python API
@@ -16,39 +18,34 @@ def test_login_x_com(page: "playwright.sync_api.Page"):
 
     page.goto("https://x.com")
 
-    # Try a few selectors that historically worked
-    login_selector_candidates = [
+    login_btn = find_locator_with_healing(page, [
         'a[aria-label="Log in"]',
         'a[href*="/login"]',
         'text=Log in',
-    ]
-
-    login_btn = None
-    for sel in login_selector_candidates:
-        loc = page.locator(sel)
-        if loc.count() and loc.first.is_visible():
-            login_btn = loc.first
-            break
-
-    assert login_btn is not None, "Could not find a Log in button on x.com"
+    ])
     login_btn.click()
 
     # Fill username/password using playwight locators
     page.wait_for_timeout(1000)
-    if page.locator('input[name="session[username_or_email]"]').count():
-        page.fill('input[name="session[username_or_email]"]', username)
-    elif page.locator('input[type="text"]').count():
-        page.fill('input[type="text"]', username)
+    # Fill username and password fields with healing locators
+    try:
+        user_in = find_locator_with_healing(page, ['input[name="session[username_or_email]"]', 'input[type="text"]'])
+        user_in.fill(username)
+    except Exception:
+        pass
 
-    if page.locator('input[type="password"]').count():
-        page.fill('input[type="password"]', password)
+    try:
+        pass_in = find_locator_with_healing(page, ['input[type="password"]'])
+        pass_in.fill(password)
+    except Exception:
+        pass
 
-    # submit
-    if page.locator('div[role="button"][data-testid="LoginForm_Login_Button"]').count():
-        page.click('div[role="button"][data-testid="LoginForm_Login_Button"]')
-    else:
+    # Try to click a login button, fallback to Enter
+    try:
+        btn = find_locator_with_healing(page, ['div[role="button"][data-testid="LoginForm_Login_Button"]', 'button[type="submit"]', 'text=Log in'])
+        btn.click()
+    except Exception:
         page.keyboard.press('Enter')
 
-    # Wait a bit and assert we've navigated away from the login page
     page.wait_for_load_state('networkidle', timeout=10000)
     assert "login" not in page.url

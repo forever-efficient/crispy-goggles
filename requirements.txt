@@ -1,4 +1,4 @@
 # Requirements for running the test suite. Adjust pins as needed.
-behave>=1.2,<2
 playwright>=1.35,<2
+pytest-playwright>=0.7
 typing-extensions>=4.0

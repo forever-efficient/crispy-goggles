@@ -18,7 +18,7 @@ make setup
 make install-browsers
 ```
 
-That's it — you can run unit tests with `pytest` and Behave scenarios with `behave`.
+That's it — you can run unit tests with `pytest`. Browser tests now use Playwright via `pytest-playwright`.
 
 ## CI and Playwright setup
 
@@ -61,28 +61,29 @@ playwright install
 
 ## Local-only tests and CI
 
-- Tests/scenarios tagged with `@local` are intended to run only on a developer machine. CI explicitly skips these scenarios to avoid launching local browsers or depending on desktop-only resources.
+- Tests marked with `@pytest.mark.local` are intended to run only on a developer machine. CI explicitly skips these tests to avoid launching local browsers or depending on desktop-only resources.
 
 - CI behavior:
-  - The GitHub Actions workflow runs Behave with the tag exclusion `-t ~@local`, so scenarios tagged `@local` are skipped. The workflow also prints which files contain `@local` tags for visibility.
+  - The GitHub Actions workflow runs pytest with the marker exclusion `-m "not local"`, so tests marked `local` are skipped. The workflow prints any local tests for visibility.
 
-- How to run local-only scenarios locally (Chrome):
+- How to run local-only tests locally:
 
 ```bash
 # create and activate venv (if you haven't already)
 make setup
 source .venv/bin/activate
 
-# run only local scenarios (those tagged @local)
-USE_CHROME=1 ./.venv/bin/python -m behave -f pretty -t @local
+# run only local tests (those marked with pytest.mark.local)
+. .venv/bin/activate
+.venv/bin/python -m pytest -q -m local
 
-# run all non-local scenarios (what CI runs)
-USE_CHROME=1 ./.venv/bin/python -m behave -f pretty -t ~@local
+# run all non-local tests (what CI runs)
+. .venv/bin/activate
+.venv/bin/python -m pytest -q -m "not local"
 ```
 
 - Useful environment variables:
-  - `CHROME_HEADLESS=1` — run Chrome in headless mode for faster CI-like runs locally
-  - `CHROME_USER_AGENT` — override the browser user-agent string
-  - `TEST_LOGIN_USERNAME`, `TEST_LOGIN_PASSWORD` — override the credentials used by the local login scenario
+  - `PLAYWRIGHT_HEADLESS=1` — run Playwright in headless mode for faster CI-like runs locally
+  - `TEST_LOGIN_USERNAME`, `TEST_LOGIN_PASSWORD` — override the credentials used by the local login test
 
-Note: The `@local` tag is a convention used to signal tests that require a human-like browser environment or local resources; CI will ignore them.
+Note: The `local` marker denotes tests that require a real desktop-like browser environment; CI will ignore them.
