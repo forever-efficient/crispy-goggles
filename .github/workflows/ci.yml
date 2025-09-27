@@ -26,12 +26,10 @@ jobs:
       - name: Install dependencies
         run: |
           python -m venv .venv
-          . .venv/bin/activate
-          pip install -e .[dev]
+          ./.venv/bin/python -m pip install -e '.[dev]'
       - name: Run unit tests
         run: |
-          . .venv/bin/activate
-          pytest -q
+          ./.venv/bin/python -m pytest -q
 
   browsers:
     name: Prepare Playwright browsers (cache)
@@ -56,15 +54,13 @@ jobs:
       - name: Install dependencies and Playwright
         run: |
           python -m venv .venv
-          . .venv/bin/activate
-          pip install -e .[dev]
+          ./.venv/bin/python -m pip install -e '.[dev]'
           # Always run install here to populate cache if missing
-          playwright install --with-deps
+          ./.venv/bin/python -m playwright install --with-deps
       - name: Get Playwright version
         id: playwright-version
         run: |
-          . .venv/bin/activate
-          VERSION=$(python -c "import importlib.metadata as m; print(m.version('playwright'))") || VERSION=unknown
+          VERSION=$(.venv/bin/python -c "import importlib.metadata as m; print(m.version('playwright'))" 2>/dev/null || echo unknown)
           echo "version=$VERSION" >> $GITHUB_OUTPUT
       - name: Save Playwright cache (versioned)
         uses: actions/cache@v4
@@ -99,14 +95,11 @@ jobs:
       - name: Install dependencies
         run: |
           python -m venv .venv
-          . .venv/bin/activate
-          pip install -e .[dev]
+          ./.venv/bin/python -m pip install -e '.[dev]'
       - name: Install Playwright browsers (if cache miss)
         if: steps.cache-playwright.outputs.cache-hit != 'true'
         run: |
-          . .venv/bin/activate
-          playwright install --with-deps
+          ./.venv/bin/python -m playwright install --with-deps
       - name: Run Behave features
         run: |
-          . .venv/bin/activate
-          behave -f pretty
+          ./.venv/bin/python -m behave -f pretty
