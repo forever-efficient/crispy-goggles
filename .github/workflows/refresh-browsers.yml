@@ -1,0 +1,74 @@
+name: Refresh Playwright Browsers
+
+on:
+  schedule:
+    - cron: '0 3 * * *' # daily at 03:00 UTC
+  workflow_dispatch: {}
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - name: Restore Playwright cache
+        id: cache-playwright
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/ms-playwright
+            ~/.cache/playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+      - name: Install dependencies
+        run: |
+          python -m venv .venv
+          . .venv/bin/activate
+          pip install -r requirements.txt
+      - name: Install Playwright browsers (if cache miss)
+        if: steps.cache-playwright.outputs.cache-hit != 'true'
+        run: |
+          . .venv/bin/activate
+          playwright install --with-deps
+      - name: Get Playwright version
+        id: playwright-version
+        run: |
+          . .venv/bin/activate
+          VERSION=$(python -c "import importlib.metadata as m; print(m.version('playwright'))") || VERSION=unknown
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+      - name: Save Playwright cache (versioned)
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/ms-playwright
+            ~/.cache/playwright
+          key: ${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.version }}-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+      - name: Confirm cache updated
+        run: echo "Playwright browsers installed (if needed) and cache updated"
+      # TODO: Email notification (disabled). To enable email notifications, add the SMTP repository secrets
+      # (SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD, NOTIFY_EMAIL) and uncomment the block below.
+      # - name: Email on failure
+      #   if: failure()
+      #   uses: dawidd6/action-send-mail@v3
+      #   with:
+      #     server_address: ${{ secrets.SMTP_HOST }}
+      #     server_port: ${{ secrets.SMTP_PORT }}
+      #     username: ${{ secrets.SMTP_USER }}
+      #     password: ${{ secrets.SMTP_PASSWORD }}
+      #     subject: "Playwright refresh job failed: ${{ github.repository }}"
+      #     to: ${{ secrets.NOTIFY_EMAIL }}
+      #     from: ${{ secrets.NOTIFY_EMAIL }}
+      #     body: "The scheduled Playwright browser refresh job failed for ${{ github.repository }} (run: ${{ github.run_id }}). Check the workflow run details."
+      # TODO: Enable Slack notifications if needed. To enable, create a secret SLACK_WEBHOOK and uncomment the block below.
+      # - name: Slack notification on failure
+      #   if: failure()
+      #   uses: rtCamp/action-slack-notify@v2
+      #   env:
+      #     SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+      #     SLACK_MESSAGE: "Playwright refresh job failed for ${{ github.repository }} (run: ${{ github.run_id }})"
