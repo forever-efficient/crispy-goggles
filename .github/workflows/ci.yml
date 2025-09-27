@@ -121,10 +121,15 @@ jobs:
         if: steps.cache-playwright.outputs.cache-hit != 'true'
         run: |
           ./.venv/bin/python -m playwright install --with-deps
+      - name: Warn about local-only scenarios
+        run: |
+          echo "Listing any scenarios tagged @local (these are skipped in CI):"
+          grep -R --line-number --color=never "@local" || echo "(no @local tags found)"
       - name: Run Behave features
         run: |
           set -o pipefail
-          ./.venv/bin/python -m behave -f pretty 2>&1 | tee behave-output.txt
+          # Exclude local-only scenarios marked with @local so CI does not try to run local browsers
+          ./.venv/bin/python -m behave -f pretty -t ~@local 2>&1 | tee behave-output.txt
           RC=${PIPESTATUS[0]}
           exit $RC
       - name: Sanitize behave output
