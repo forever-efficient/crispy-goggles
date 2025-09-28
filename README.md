@@ -113,7 +113,7 @@ source .venv/bin/activate
    return to the terminal and press ENTER to save the file:
 
 ```bash
-.venv/bin/python scripts/ensure_auth_state.py --output auth_state.json --url https://x.com/login
+.venv/bin/python scripts/dev/ensure_auth_state.py --output auth_state.json --url https://x.com/login
 ```
 
 3. Confirm `auth_state.json` was written and keep it local (do not commit).
