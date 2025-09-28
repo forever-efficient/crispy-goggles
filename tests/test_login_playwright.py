@@ -136,6 +136,12 @@ def test_login_x_com(page: Any, request: Any) -> None:
     except Exception:
         pass
 
+    # debug: indicate whether we applied auth from storage state
+    try:
+        print(f"[test_login_playwright] auth_applied={auth_applied}")
+    except Exception:
+        pass
+
     # small micro-interactions before clicking login (skip if auth applied)
     if not auth_applied:
         try:
