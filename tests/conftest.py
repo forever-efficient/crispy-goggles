@@ -9,6 +9,44 @@ import subprocess
 import sys
 
 
+def _playwright_cache_dirs() -> list:
+    """Return candidate Playwright cache directories to check for installed browsers."""
+    env = os.getenv("PLAYWRIGHT_BROWSERS_PATH")
+    if env:
+        return [Path(env)]
+    return [Path(os.path.expanduser("~")) / ".cache" / "ms-playwright", Path(os.path.expanduser("~")) / ".cache" / "playwright"]
+
+
+def _playwright_browsers_present() -> bool:
+    try:
+        for d in _playwright_cache_dirs():
+            if d.exists() and any(d.iterdir()):
+                return True
+    except Exception:
+        pass
+    return False
+
+
+def pytest_collection_modifyitems(config, items):
+    """Skip tests that require Playwright when running in CI without browsers.
+
+    This prevents the test harness from attempting to launch browsers in CI
+    when maintainers have opted out of automatic browser installation.
+    """
+    # Only enforce in CI environments
+    if not (os.getenv("CI") or os.getenv("GITHUB_ACTIONS") or os.getenv("GITLAB_CI")):
+        return
+
+    # Per project policy: never run Playwright/browser tests in CI. Mark any
+    # test that requests the pytest-playwright 'page' fixture as skipped so the
+    # CI test run cannot launch browsers or trigger installers.
+    skip_reason = "Playwright/browser tests are disabled in CI (local-only)"
+    for item in items:
+        if "page" in getattr(item, "fixturenames", []):
+            item.add_marker(pytest.mark.skip(reason=skip_reason))
+
+
+
 @pytest.hookimpl(tryfirst=True, hookwrapper=True)
 def pytest_runtest_makereport(item, call: CallInfo):
     # run all other hooks to obtain the report object
@@ -27,21 +65,30 @@ def pytest_runtest_makereport(item, call: CallInfo):
 
 
 @pytest.fixture(autouse=True)
-def trace_on_failure(page, request):
-    # start tracing for each test; stop and save only on failure to avoid large outputs
-    # Playwright trace API available via page.context.tracing
-    with contextlib.suppress(Exception):
-        page.context.tracing.start(snapshots=True, screenshots=True)
+def trace_on_failure(request):
+    # Autouse fixture that starts Playwright tracing only when a real 'page'
+    # fixture is present for the test. Important: do NOT request 'page' here
+    # to avoid forcing Playwright initialization in CI.
+    page = None
+    try:
+        page = request.node.funcargs.get("page")
+    except Exception:
+        page = None
+
+    if page:
+        with contextlib.suppress(Exception):
+            page.context.tracing.start(snapshots=True, screenshots=True)
+
     yield
-    # after the test finishes
+
+    # after the test finishes, only stop/save tracing if a page was used
     report = request.node.rep_call if hasattr(request.node, "rep_call") else None
-    if report is not None and report.failed:
+    if page and report is not None and report.failed:
         Path("artifacts").mkdir(parents=True, exist_ok=True)
         trace_path = "artifacts/test_trace.zip"
         with contextlib.suppress(Exception):
             page.context.tracing.stop(path=trace_path)
-    else:
-        # stop tracing without saving if test passed
+    elif page:
         with contextlib.suppress(Exception):
             page.context.tracing.stop()
 
