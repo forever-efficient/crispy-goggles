@@ -217,3 +217,26 @@ you can sign in and save the state.
 If you'd like, we can add an optional README section showing how to safely add
 the base64-encoded state into a private CI secret (but per project policy this
 repo will not use auth state in CI by default).
+
+## Local Playwright tests (developer helpers)
+
+This repository includes local-only Playwright tests that are intended for
+developer machines only. The tests are explicitly skipped in CI and may use a
+recorded `auth_state.json` to reuse an authenticated session locally.
+
+Quick notes:
+- Use `TEST_USE_AUTH_STATE=1` to opt-in to using `auth_state.json` when running
+  the local login test.
+- Local runs may be headed (for visual verification) or headless; set
+  `-o playwright_headless=false` or `--headed` on the pytest command line to
+  see UI interactions.
+
+Example:
+
+```bash
+TEST_USE_AUTH_STATE=1 TEST_LOGIN_USERNAME=dev@example.com TEST_LOGIN_PASSWORD=placeholder \
+  .venv/bin/python -m pytest -q tests/test_login_playwright.py -o playwright_browser=chromium --headed
+```
+
+The test will create a small companion meta file next to `auth_state.json`
+(`auth_state.json.meta.json`) to record browser hints used during playback.

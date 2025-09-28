@@ -34,6 +34,11 @@ jobs:
           ./.venv/bin/python -m pytest -q -m "not local" 2>&1 | tee pytest-output.txt
           RC=${PIPESTATUS[0]}
           exit $RC
+      - name: List local-only tests (for visibility)
+        run: |
+          echo "Listing files that reference @pytest.mark.local (CI excludes these tests):"
+          # Grep for marker usage so maintainers can see which tests are excluded from CI
+          grep -R --line-number "pytest.mark.local" tests || true
       - name: Sanitize pytest output
         if: failure()
         run: |
