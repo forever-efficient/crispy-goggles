@@ -33,6 +33,43 @@ To use these settings in VS Code, open the repository folder; VS Code will
 prompt to install the recommended extensions and automatically apply the
 workspace settings.
 
+## Preparing Playwright browsers for CI
+
+Per team policy, CI will not install Playwright browsers automatically during
+test runs. Instead, maintainers must ensure the CI cache contains the required
+binaries before execution. Use the following approaches:
+
+- Manual GitHub Actions run (recommended):
+  1. Open the 'Actions' tab in GitHub and select the 'Refresh Playwright Browsers'
+     workflow.
+  2. Click 'Run workflow' to trigger a manual run which installs browsers and
+     updates the cache. This workflow is intentionally manual to avoid
+     unattended downloads.
+
+- Local cache population (for CI admins):
+  1. On a machine with network access, create and activate the venv:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -e '.[dev]'
+# Install browsers and dependencies
+playwright install --with-deps
+```
+
+  2. Compress the Playwright cache directories and upload them to your CI
+     cache storage or create a repository artifact that the CI restore step
+     can use. The cache directories are typically:
+
+  - ~/.cache/ms-playwright
+  - ~/.cache/playwright
+
+  Note: exact cache upload steps depend on your CI provider.
+
+If the cache is not present, CI will fail the Playwright job intentionally so
+the missing dependency is visible and can be remedied by a manual refresh.
+
+
 
 2. Install Playwright browsers (only needed once):
 

@@ -79,10 +79,7 @@ jobs:
         run: |
           python -m venv .venv
           ./.venv/bin/python -m pip install -e '.[dev]'
-      - name: Install Playwright browsers (optional)
-        if: steps.cache-playwright.outputs.cache-hit != 'true'
-        run: |
-          ./.venv/bin/python -m playwright install --with-deps || echo "Playwright install skipped or failed"
+      # No Playwright install step here; CI expects browsers to be prepared ahead of time
       - name: Warn about local-only tests
         run: |
           echo "Listing any tests marked 'local' (these are skipped in CI):"
