@@ -1,0 +1,15 @@
+{
+    // Prevent VS Code Makefile extension from auto-configuring the workspace on open
+    "makefile.configureOnOpen": false,
+
+    // Python formatting and linting defaults for contributors
+    "python.formatting.provider": "black",
+    "python.linting.enabled": true,
+    "python.linting.ruffEnabled": true,
+    "python.linting.mypyEnabled": true,
+
+    // Editor preferences
+    "editor.formatOnSave": true,
+    "files.trimTrailingWhitespace": true,
+    "files.insertFinalNewline": true
+}

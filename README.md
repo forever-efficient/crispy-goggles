@@ -12,6 +12,28 @@ Python Automation
 make setup
 ```
 
+
+## Developer setup (VS Code)
+
+This repository includes shared VS Code workspace settings and a set of recommended
+extensions to make the development experience consistent across contributors.
+
+- Shared settings are stored in `.vscode/settings.json` and include editor
+  preferences (format on save, Black as the formatter) and linting defaults
+  (Ruff and mypy enabled).
+- Recommended extensions are in `.vscode/extensions.json`. We suggest the
+  following for a consistent Python experience:
+
+  - ms-python.python
+  - ms-python.vscode-pylance
+  - charliermarsh.ruff
+  - eamodio.gitlens
+
+To use these settings in VS Code, open the repository folder; VS Code will
+prompt to install the recommended extensions and automatically apply the
+workspace settings.
+
+
 2. Install Playwright browsers (only needed once):
 
 ```bash
@@ -113,7 +135,7 @@ source .venv/bin/activate
    return to the terminal and press ENTER to save the file:
 
 ```bash
-.venv/bin/python scripts/ensure_auth_state.py --output auth_state.json --url https://x.com/login
+.venv/bin/python scripts/dev/ensure_auth_state.py --output auth_state.json --url https://x.com/login
 ```
 
 3. Confirm `auth_state.json` was written and keep it local (do not commit).
