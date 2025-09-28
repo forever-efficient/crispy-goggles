@@ -9,56 +9,6 @@ import subprocess
 import sys
 
 
-def _playwright_cache_dir() -> Path:
-    """Return the default Playwright cache directory used for downloaded browsers.
-
-    This follows the common default (~/.cache/ms-playwright) but respects the
-    PLAYWRIGHT_BROWSERS_PATH environment variable if set by the user/CI.
-    """
-    env = os.getenv("PLAYWRIGHT_BROWSERS_PATH")
-    if env:
-        return Path(env)
-    return Path(os.path.expanduser("~")) / ".cache" / "ms-playwright"
-
-
-def ensure_playwright_browsers_installed() -> None:
-    """Install Playwright browsers if they're not already present.
-
-    This is intentionally conservative: it only runs the installer when the
-    cache directory appears missing or empty. Running the full installer every
-    test run is avoided for speed.
-    """
-    cache_dir = _playwright_cache_dir()
-    try:
-        if cache_dir.exists() and any(cache_dir.iterdir()):
-            # Assume browsers are present
-            return
-    except Exception:
-        # If checking the cache fails for any reason, attempt installation.
-        pass
-
-    print("Playwright browsers not found in cache; running 'playwright install' (this may download browsers)...")
-    try:
-        subprocess.check_call([sys.executable, "-m", "playwright", "install", "--with-deps"])
-    except subprocess.CalledProcessError as e:
-        # Re-raise as a RuntimeError so pytest surface it clearly
-        raise RuntimeError(f"Failed to install Playwright browsers: {e}")
-
-
-def pytest_sessionstart(session):
-    # Allow skipping automatic install via env var for offline or constrained runs
-    if os.getenv("PLAYWRIGHT_SKIP_INSTALL"):
-        print("Skipping Playwright browser install due to PLAYWRIGHT_SKIP_INSTALL")
-        return
-
-    try:
-        ensure_playwright_browsers_installed()
-    except Exception as e:
-        # Fail early with a readable message
-        pytest.exit(f"Playwright browser setup failed: {e}")
-
-
-
 @pytest.hookimpl(tryfirst=True, hookwrapper=True)
 def pytest_runtest_makereport(item, call: CallInfo):
     # run all other hooks to obtain the report object
