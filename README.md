@@ -38,8 +38,9 @@ workspace settings.
 Per project policy, Playwright/browser tests are strictly local-only and are
 never executed automatically in CI. The GitHub Actions workflows explicitly
 exclude tests marked with `@pytest.mark.local` so CI runs cannot launch
-desktop browsers, trigger installer downloads, or fail due to missing browser
-binaries.
+desktop browsers or trigger installer downloads. CI does not fail because of
+missing Playwright browser binaries: browser-driven tests are excluded from
+normal CI runs.
 
 If maintainers need to run Playwright/browser tests in a CI environment for a
 special case, they must prepare the CI environment manually (for example by
@@ -88,9 +89,13 @@ That's it — you can run unit tests with `pytest`. Browser tests now use Playwr
 
 ## CI and Playwright setup
 
-This repository uses GitHub Actions to run unit tests and Playwright-based browser tests. A scheduled workflow refreshes Playwright browsers daily and can send failure notifications.
+This repository's CI runs unit tests (excluding local/browser tests). There is
+a manual `Refresh Playwright Browsers` workflow that maintainers can run to
+prepare browser caches if they need to execute browser tests outside normal
+CI.
 
-Required repository secrets for email notifications:
+Required repository secrets for optional notification behaviour (used only by
+the manual refresh workflow):
 - `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `NOTIFY_EMAIL`
 
 To enable Slack notifications, add a `SLACK_WEBHOOK` secret and uncomment the Slack step in `.github/workflows/refresh-browsers.yml`.
@@ -106,7 +111,9 @@ Once secrets are added, you can re-enable the notification steps in `.github/wor
 
 ## Playwright troubleshooting (quick)
 
-- If Playwright tests fail in CI with browser errors, try running locally and installing browsers:
+Note: because browser tests are excluded from CI, the troubleshooting steps
+below apply to local or manually-run browser tests only. If you need to run
+browser tests locally, install Playwright browsers as follows:
 
 ```bash
 python -m venv .venv
@@ -115,9 +122,9 @@ make setup
 playwright install
 ```
 
-- Common fixes:
-  - Missing system libraries on Linux runners: use `playwright install --with-deps` (CI uses this).
-  - Headless vs headed differences: try running with `context.browser = context.playwright.chromium.launch(headless=False)` locally to debug UI issues.
+Common fixes for local/browser runs:
+- Missing system libraries on Linux: use `playwright install --with-deps`.
+- Headless vs headed differences: run with `headless=False` locally to debug UI.
 
 ## FAQ
 
