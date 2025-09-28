@@ -27,10 +27,11 @@ jobs:
         run: |
           python -m venv .venv
           ./.venv/bin/python -m pip install -e '.[dev]'
-      - name: Run unit tests
+      - name: Run unit tests (skip local-only Playwright tests)
         run: |
           set -o pipefail
-          ./.venv/bin/python -m pytest -q 2>&1 | tee pytest-output.txt
+          # Skip tests marked with @pytest.mark.local so Playwright/browser tests are never executed in CI
+          ./.venv/bin/python -m pytest -q -m "not local" 2>&1 | tee pytest-output.txt
           RC=${PIPESTATUS[0]}
           exit $RC
       - name: Sanitize pytest output
@@ -52,66 +53,8 @@ jobs:
           payload=$(jq -n --arg body "$SNIPPET" '{body: $body}')
           curl -s -H "Authorization: token $GITHUB_TOKEN" -H "Content-Type: application/json" -d "$payload" "https://api.github.com/repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA/comments" || true
 
-  # The separate 'browsers' job was removed per team preference. Playwright
-  # install and cache responsibility remains in the pytest-playwright job.
-
-  pytest-playwright:
-    name: Pytest + Playwright
-    needs: [unit]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
-      - name: Restore Playwright cache
-        id: cache-playwright
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/ms-playwright
-            ~/.cache/playwright
-          key: ${{ runner.os }}-playwright-${{ hashFiles('pyproject.toml') }}
-          restore-keys: |
-            ${{ runner.os }}-playwright-
-      - name: Install dependencies
-        run: |
-          python -m venv .venv
-          ./.venv/bin/python -m pip install -e '.[dev]'
-      # No Playwright install step here; CI expects browsers to be prepared ahead of time
-      - name: Warn about local-only tests
-        run: |
-          echo "Listing any tests marked 'local' (these are skipped in CI):"
-          grep -R --line-number --color=never "@pytest.mark.local" || echo "(no local tests found)"
-      - name: Run pytest
-        run: |
-          set -o pipefail
-          ./.venv/bin/python -m pytest -q -m "not local" 2>&1 | tee pytest-playwright-output.txt
-          RC=${PIPESTATUS[0]}
-          exit $RC
-      - name: Sanitize pytest output
-        if: failure()
-        run: |
-          python ci/sanitize_logs.py pytest-playwright-output.txt pytest-playwright-output-sanitized.txt
-      - name: Upload sanitized pytest output artifact
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: pytest-playwright-output-sanitized-${{ github.run_id }}-${{ github.job }}
-          path: pytest-playwright-output-sanitized.txt
-      - name: Post short sanitized pytest snippet as commit comment
-        if: failure()
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          SNIPPET=$(head -c 4000 pytest-playwright-output-sanitized.txt | sed 's/"/\\"/g' | sed "s/'/\\'/g")
-          payload=$(jq -n --arg body "$SNIPPET" '{body: $body}')
-          curl -s -H "Authorization: token $GITHUB_TOKEN" -H "Content-Type: application/json" -d "$payload" "https://api.github.com/repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA/comments" || true
-
-      - name: Upload test artifacts (screenshots, HTML, traces)
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-artifacts-${{ github.run_id }}-${{ github.job }}
-          path: artifacts/
+  # Note: Playwright/browser tests are intentionally excluded from CI. If
+  # maintainers need to run browser tests in CI for debugging they should use
+  # the dedicated manual workflow (Refresh Playwright Browsers) to prepare
+  # caches and then run tests manually; however, by project policy these tests
+  # are local-only and must not execute automatically on CI runs.

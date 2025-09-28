@@ -35,9 +35,19 @@ workspace settings.
 
 ## Preparing Playwright browsers for CI
 
-Per team policy, CI will not install Playwright browsers automatically during
-test runs. Instead, maintainers must ensure the CI cache contains the required
-binaries before execution. Use the following approaches:
+Per project policy, Playwright/browser tests are strictly local-only and are
+never executed automatically in CI. The GitHub Actions workflows explicitly
+exclude tests marked with `@pytest.mark.local` so CI runs cannot launch
+desktop browsers, trigger installer downloads, or fail due to missing browser
+binaries.
+
+If maintainers need to run Playwright/browser tests in a CI environment for a
+special case, they must prepare the CI environment manually (for example by
+running the repository's manual `Refresh Playwright Browsers` workflow to
+populate the cache). This is an occasional, manual operation and not part of
+normal CI runs.
+
+Recommended approaches for preparing Playwright browsers (manual only):
 
 - Manual GitHub Actions run (recommended):
   1. Open the 'Actions' tab in GitHub and select the 'Refresh Playwright Browsers'
@@ -65,9 +75,6 @@ playwright install --with-deps
   - ~/.cache/playwright
 
   Note: exact cache upload steps depend on your CI provider.
-
-If the cache is not present, CI will fail the Playwright job intentionally so
-the missing dependency is visible and can be remedied by a manual refresh.
 
 
 
@@ -124,6 +131,12 @@ playwright install
 
 - CI behavior:
   - The GitHub Actions workflow runs pytest with the marker exclusion `-m "not local"`, so tests marked `local` are skipped. The workflow prints any local tests for visibility.
+
+![Browser tests: local-only](https://img.shields.io/badge/Browser%20tests-local--only-brightgreen)
+
+**Policy (immutable): Browser tests and any Playwright- or browser-driven tests are never executed on CI.**
+
+This policy is deliberate: CI must not run desktop browser tests, must not auto-install Playwright browsers, and must never fail due to missing browser binaries. Any request to change this policy must be handled by repository maintainers and carried out via a documented manual process (for example, a manual run of the `Refresh Playwright Browsers` workflow).
 
 - How to run local-only tests locally:
 
