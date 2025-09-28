@@ -36,9 +36,9 @@ jobs:
           exit $RC
       - name: List local-only tests (for visibility)
         run: |
-          echo "Listing files that reference @pytest.mark.local (CI excludes these tests):"
-          # Grep for marker usage so maintainers can see which tests are excluded from CI
-          grep -R --line-number "pytest.mark.local" tests || true
+          # Use a small helper script to collect tests. We prefer an explicit script
+          # to avoid multiline heredocs in YAML which can confuse some editors.
+          ./.venv/bin/python ci/list_local_tests.py
       - name: Sanitize pytest output
         if: failure()
         run: |

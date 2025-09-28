@@ -1,15 +1,18 @@
 {
-    // Prevent VS Code Makefile extension from auto-configuring the workspace on open
-    "makefile.configureOnOpen": false,
-
-    // Python formatting and linting defaults for contributors
-    "python.formatting.provider": "black",
-    "python.linting.enabled": true,
-    "python.linting.ruffEnabled": true,
-    "python.linting.mypyEnabled": true,
-
-    // Editor preferences
-    "editor.formatOnSave": true,
-    "files.trimTrailingWhitespace": true,
-    "files.insertFinalNewline": true
+  // Use the GitHub Actions schema for workflow files so the YAML extension
+  // validates .github/workflows/*.yml or .yaml as GitHub Actions workflows.
+  "yaml.schemas": {
+    "https://json.schemastore.org/github-workflow.json": ".github/workflows/*"
+  },
+  // Prevent VS Code Makefile extension from auto-configuring the workspace on open
+  "makefile.configureOnOpen": false,
+  // Python formatting and linting defaults for contributors
+  "python.formatting.provider": "black",
+  "python.linting.enabled": true,
+  "python.linting.ruffEnabled": true,
+  "python.linting.mypyEnabled": true,
+  // Editor preferences
+  "editor.formatOnSave": true,
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true
 }
