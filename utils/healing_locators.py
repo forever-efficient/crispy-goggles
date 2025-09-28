@@ -1,12 +1,15 @@
 # Use GitHub Copilot to help write this function.
 # Type "def find_element_with_healing" and let it suggest the arguments and logic.
 
-from playwright.sync_api import Page, Locator
 import time
-from typing import List, Optional
+from typing import Any
+
+from playwright.sync_api import Locator
 
 
-def find_element_with_healing(page: Page, locators: List[str], timeout: float = 5.0) -> Locator:
+def find_element_with_healing(
+    page: Any, locators: list[str], timeout: float = 5.0,
+) -> Locator:
     """Try each selector in `locators` until one resolves and is visible.
 
     Args:
@@ -19,9 +22,10 @@ def find_element_with_healing(page: Page, locators: List[str], timeout: float = 
 
     Raises:
         RuntimeError if none of the locators matched within their timeouts.
+
     """
     start = time.time()
-    last_error: Optional[Exception] = None
+    last_error: Exception | None = None
     for locator_str in locators:
         try:
             element = page.locator(locator_str)
@@ -42,4 +46,6 @@ def find_element_with_healing(page: Page, locators: List[str], timeout: float = 
             continue
 
     total = time.time() - start
-    raise RuntimeError(f"All locators failed after {total:.1f}s. Tried: {locators}. Last error: {last_error}")
+    raise RuntimeError(
+        f"All locators failed after {total:.1f}s. Tried: {locators}. Last error: {last_error}",
+    )

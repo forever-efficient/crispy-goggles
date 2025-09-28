@@ -149,3 +149,10 @@ jobs:
           SNIPPET=$(head -c 4000 pytest-playwright-output-sanitized.txt | sed 's/"/\\"/g' | sed "s/'/\\'/g")
           payload=$(jq -n --arg body "$SNIPPET" '{body: $body}')
           curl -s -H "Authorization: token $GITHUB_TOKEN" -H "Content-Type: application/json" -d "$payload" "https://api.github.com/repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA/comments" || true
+
+      - name: Upload test artifacts (screenshots, HTML, traces)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-artifacts-${{ github.run_id }}-${{ github.job }}
+          path: artifacts/

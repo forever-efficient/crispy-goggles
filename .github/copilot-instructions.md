@@ -1,20 +1,13 @@
 <!-- .github/copilot-instructions.md - Guidance for AI coding agents working on crispy-goggles -->
 # Quick orientation (20-30s)
 
-- This repository is a small Python automation project using Behave (BDD) + Playwright (browser automation).
-- Tests live under `features/` (Gherkin `.feature` files + step definitions in `features/steps/`).
-- Test browser lifecycle is managed in `features/environment.py` (Playwright is started/stopped there).
-
+-- This repository is a small Python automation project using pytest + Playwright (browser automation).
 # What matters for edits or feature work
 
-- Use the existing test pattern: Gherkin scenarios in `features/*.feature` -> step implementations in `features/steps/*.py`.
-- Keep Playwright page lifecycle consistent: `before_all` starts Playwright, `before_scenario` launches a browser and creates `context.page`, `after_scenario` closes it.
-- Locator resiliency is centralized in `utils/healing_locators.py`. Prefer `find_element_with_healing(page, [...])` for selectors that may change; follow its simple "try each selector" behaviour.
-
+-- Use the existing test pattern: pytest tests under `tests/` that use the `page` fixture from `pytest-playwright`.
 # How to run tests locally (developer workflow)
 
-- Install dependencies: this repo expects Python with Playwright and Behave installed. Example (macOS / zsh):
-
+-- Install dependencies: this repo expects Python with Playwright installed. Example (macOS / zsh):
 ```bash
 # create venv and activate
 python -m venv .venv
@@ -23,49 +16,33 @@ make setup
 playwright install  # install browsers
 ```
 
-- Run the whole suite with Behave from the repo root:
-
+-- Run the whole test suite with pytest from the repo root:
 ```bash
-behave
+pytest -q
 ```
 
 - If tests hang or a browser process is left behind, ensure `context.browser.close()` in `after_scenario` runs (see `features/environment.py`).
-
 # Project-specific conventions and patterns
 
-- Minimal project: no test runner wrapper or test config file (e.g., pytest). Behave is the default runner.
-- Steps should be small and focused: page navigation in `Given`, interactions in `When`, assertions in `Then`.
-- Visual baseline artifacts (example: `login_page_baseline.png`) may be created manually by tests — these are checked into the repo. When adding visual checks, document where screenshots are saved.
-- Locator healing: `find_element_with_healing(page, locators)` returns a Playwright Locator if any of the provided selectors matches and is visible. It prints which locator succeeded and raises if none match. Use it for inputs, buttons, and other interactable elements.
-
+-- Minimal project: pytest is the test runner and pytest-playwright provides browser fixtures.
 # Files to open first when making changes
 
-- `features/login.feature` — example Gherkin flow.
-- `features/steps/login_steps.py` — real step implementations; shows how `find_element_with_healing` is used and where screenshots are taken.
-- `features/environment.py` — Playwright lifecycle; any changes to browser or context creation belong here.
-- `utils/healing_locators.py` — central helper for selector fallback logic.
-
+-- `tests/test_login_playwright.py` — Playwright-based login test. Use it as a migration example.
 # Idiomatic code edits for agents
 
 - When changing step implementations, preserve the use of `context.page` from `environment.py` rather than instantiating Playwright again.
-- Use Playwright's `locator(selector)` and `is_visible()` checks as shown in `utils/healing_locators.py`.
-- Avoid adding global state outside `context` (Behave uses `context` to share per-scenario objects).
-
 # Integration and external dependencies
 
 - External services: none by design. Tests exercise `https://the-internet.herokuapp.com/` in existing scenarios.
- - Runtime dependencies: Behave, Playwright and their transitive packages. Dependencies are declared in `pyproject.toml` and installed via `make setup`.
- - Use the included `Makefile` and `scripts/setup.sh` to standardize environment setup. `make setup` will create a venv and install pinned packages; `make install-browsers` will run `playwright install`.
 
 ## CI layout (GitHub Actions)
 
 - The repository CI has three logical jobs in `.github/workflows/ci.yml`:
-	- `unit`: runs `pytest` (fast) and installs Python dependencies.
 	- `browsers`: installs Playwright browsers and caches them (runs once per workflow run).
-	- `behave`: restores the Playwright browser cache and runs the full Behave suite (runs on PRs and pushes).
+		- `browsers`: installs and caches Playwright browsers and runs once per workflow run.
+		- `pytest-playwright`: runs pytest with Playwright fixtures.
 
-- To reproduce CI locally:
-
+# To reproduce CI locally:
 ```bash
 # create venv and install deps
 make setup
@@ -73,17 +50,12 @@ make setup
 make install-browsers
 # run unit tests
 pytest -q
-# run behave
-behave -f pretty
 ```
 
 Note: The README contains step-by-step instructions for adding the required repository secrets (SMTP and Slack) used by the refresh workflow.
-
 # Example edits an AI might make (concrete)
 
 - Improve locator healing: add a short timeout and call `element.count()` or `element.first` before `is_visible()` to avoid false negatives.
-- Add a new scenario in `features/*.feature` and implement steps in `features/steps/*` following the existing pattern.
-- Add CLI helper scripts or a `Makefile` to standardize setup and `playwright install` steps.
 
 # What not to change without human review
 
@@ -93,7 +65,7 @@ Note: The README contains step-by-step instructions for adding the required repo
 # Where to leave notes for humans
 
 - Edit the `README.md` with setup steps if you change how tests are run; dependencies are declared in `pyproject.toml` and installed via `make setup`.
-- If you add cross-cutting changes (e.g., change the way Playwright is launched), update `features/environment.py` and mention it in the README and this file.
+-- If you add cross-cutting changes (e.g., change the way Playwright is launched), update `tests/conftest.py` and mention it in the README and this file.
 
 ---
 If anything above is unclear or you'd like the instructions expanded (for example adding more setup steps), tell me which area to expand and I'll update this file.
@@ -113,6 +85,6 @@ If anything above is unclear or you'd like the instructions expanded (for exampl
 	2. Install deps: `make setup`
 	3. (If failing Playwright runs) install browsers: `playwright install`
 	4. Run unit tests: `pytest -q`
-	5. Run Behave: `behave -f pretty`
+	5. Run pytest: `pytest -q`
 
 

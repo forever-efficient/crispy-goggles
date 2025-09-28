@@ -22,7 +22,7 @@ That's it — you can run unit tests with `pytest`. Browser tests now use Playwr
 
 ## CI and Playwright setup
 
-This repository uses GitHub Actions to run unit tests and Playwright/Behave browser tests. A scheduled workflow refreshes Playwright browsers daily and can send failure notifications.
+This repository uses GitHub Actions to run unit tests and Playwright-based browser tests. A scheduled workflow refreshes Playwright browsers daily and can send failure notifications.
 
 Required repository secrets for email notifications:
 - `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `NOTIFY_EMAIL`
@@ -87,3 +87,54 @@ source .venv/bin/activate
   - `TEST_LOGIN_USERNAME`, `TEST_LOGIN_PASSWORD` — override the credentials used by the local login test
 
 Note: The `local` marker denotes tests that require a real desktop-like browser environment; CI will ignore them.
+
+## Interactive auth-state helper (local-only)
+
+The project includes a small interactive helper to capture Playwright storage state
+(cookies + localStorage) and save it as `auth_state.json`. This file allows you to
+reuse a logged-in session for local debugging without automating repeated logins.
+
+Important safety notes:
+- Do NOT commit `auth_state.json` to version control. The file is added to
+  `.gitignore` by default.
+- The helper and saved auth state are intended for local development only. The
+  login test is explicitly skipped in CI and the test suite will not attempt to
+  create or use `auth_state.json` inside CI.
+
+How to create an auth state interactively:
+
+1. Activate the project's virtualenv:
+
+```bash
+source .venv/bin/activate
+```
+
+2. Run the helper and sign in manually in the opened browser. When finished,
+   return to the terminal and press ENTER to save the file:
+
+```bash
+.venv/bin/python scripts/ensure_auth_state.py --output auth_state.json --url https://x.com/login
+```
+
+3. Confirm `auth_state.json` was written and keep it local (do not commit).
+
+How tests use the auth state:
+- Set `TEST_USE_AUTH_STATE=1` when running tests locally to force tests to use
+  `auth_state.json` (the `require_auth_state` fixture will try to launch the
+  interactive helper locally if the file is missing, but will fail fast in CI).
+
+Example local run using the recorded auth state:
+
+```bash
+export TEST_USE_AUTH_STATE=1
+export TEST_LOGIN_USERNAME=you@example.com
+.venv/bin/python -m pytest -q -m local
+```
+
+If `auth_state.json` is missing when you run the test locally with
+`TEST_USE_AUTH_STATE=1`, the test harness will launch the interactive helper so
+you can sign in and save the state.
+
+If you'd like, we can add an optional README section showing how to safely add
+the base64-encoded state into a private CI secret (but per project policy this
+repo will not use auth state in CI by default).
