@@ -29,23 +29,17 @@ def main() -> None:
             ctx = browser.new_context(storage_state=str(state_path))
             page = ctx.new_page()
             print(f"Opening {args.url} with storage state {state_path}")
-            page.goto(args.url)
-            # basic checks
-            try:
-                has_auth = any(c.get('name') == 'auth_token' for c in ctx.cookies())
-            except Exception:
-                has_auth = False
-            print(f"Has auth_token cookie in context? {has_auth}")
-            print(f"Page URL: {page.url}")
-            # wait so the user can observe the headed browser
-            page.wait_for_timeout(args.pause * 1000)
-        finally:
-            try:
-                ctx.close()
-            except Exception:
-                pass
-            browser.close()
+            """Shim wrapper for backward compatibility to `scripts/dev/show_auth_state.py`."""
+            import os
+            import runpy
+            import sys
 
+            HERE = os.path.dirname(__file__)
+            TARGET = os.path.join(HERE, "dev", "show_auth_state.py")
 
-if __name__ == "__main__":
-    main()
+            if __name__ == "__main__":
+                if not os.path.exists(TARGET):
+                    print(f"Expected dev script not found: {TARGET}")
+                    sys.exit(2)
+                runpy.run_path(TARGET, run_name="__main__")
+            except Exception:
