@@ -211,3 +211,5 @@ artifacts/
 
 # Playwright storage state (local only)
 auth_state.json
+# Ignore pytest run logs
+pytest-*.txt
