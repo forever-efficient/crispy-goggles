@@ -10,4 +10,5 @@ install-browsers:
 	playwright install
 
 test: install-browsers
-	behave
+	@echo "Running pytest (Playwright-based tests)"
+	. .venv/bin/activate && .venv/bin/python -m pytest -q

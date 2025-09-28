@@ -54,10 +54,6 @@ jobs:
 
   browsers:
     name: Prepare Playwright browsers (cache)
-    # Temporarily disabled: Playwright-based browser preparation is flaky in CI and
-    # currently causes jobs to fail. Re-enable this job once Playwright tests are
-    # fixed and stable in CI.
-    if: false
     runs-on: ubuntu-latest
     needs: unit
     steps:
@@ -97,11 +93,8 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-playwright-
 
-  behave:
-    name: Behave (Playwright)
-    # Temporarily disabled: Playwright-based behave job is failing in CI.
-    # This job will be re-enabled after Playwright tests are fixed.
-    if: false
+  pytest-playwright:
+    name: Pytest + Playwright
     needs: [unit, browsers]
     runs-on: ubuntu-latest
     steps:
@@ -128,32 +121,38 @@ jobs:
         if: steps.cache-playwright.outputs.cache-hit != 'true'
         run: |
           ./.venv/bin/python -m playwright install --with-deps
-      - name: Warn about local-only scenarios
+      - name: Warn about local-only tests
         run: |
-          echo "Listing any scenarios tagged @local (these are skipped in CI):"
-          grep -R --line-number --color=never "@local" || echo "(no @local tags found)"
-      - name: Run Behave features
+          echo "Listing any tests marked 'local' (these are skipped in CI):"
+          grep -R --line-number --color=never "@pytest.mark.local" || echo "(no local tests found)"
+      - name: Run pytest
         run: |
           set -o pipefail
-          # Exclude local-only scenarios marked with @local so CI does not try to run local browsers
-          ./.venv/bin/python -m behave -f pretty -t ~@local 2>&1 | tee behave-output.txt
+          ./.venv/bin/python -m pytest -q -m "not local" 2>&1 | tee pytest-playwright-output.txt
           RC=${PIPESTATUS[0]}
           exit $RC
-      - name: Sanitize behave output
+      - name: Sanitize pytest output
         if: failure()
         run: |
-          python ci/sanitize_logs.py behave-output.txt behave-output-sanitized.txt
-      - name: Upload sanitized behave output artifact
+          python ci/sanitize_logs.py pytest-playwright-output.txt pytest-playwright-output-sanitized.txt
+      - name: Upload sanitized pytest output artifact
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: behave-output-sanitized-${{ github.run_id }}-${{ github.job }}
-          path: behave-output-sanitized.txt
-      - name: Post short sanitized behave snippet as commit comment
+          name: pytest-playwright-output-sanitized-${{ github.run_id }}-${{ github.job }}
+          path: pytest-playwright-output-sanitized.txt
+      - name: Post short sanitized pytest snippet as commit comment
         if: failure()
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          SNIPPET=$(head -c 4000 behave-output-sanitized.txt | sed 's/"/\\"/g' | sed "s/'/\\'/g")
+          SNIPPET=$(head -c 4000 pytest-playwright-output-sanitized.txt | sed 's/"/\\"/g' | sed "s/'/\\'/g")
           payload=$(jq -n --arg body "$SNIPPET" '{body: $body}')
           curl -s -H "Authorization: token $GITHUB_TOKEN" -H "Content-Type: application/json" -d "$payload" "https://api.github.com/repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA/comments" || true
+
+      - name: Upload test artifacts (screenshots, HTML, traces)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-artifacts-${{ github.run_id }}-${{ github.job }}
+          path: artifacts/

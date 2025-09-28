@@ -1,12 +1,12 @@
-"""Compatibility tests for the legacy healing helper.
+"""Unit tests for the Playwright selector healing helper.
 
-These are kept briefly during the migration; they exercise the old
-``utils.healing_locators`` interface.
+These are lightweight, pure-Python tests using dummy page/element objects so
+they can run quickly without a browser.
 """
 
 import pytest
 
-from utils.healing_locators import find_element_with_healing
+from utils.playwright_healing import find_locator_with_healing
 
 
 class DummyElement:
@@ -36,13 +36,13 @@ class DummyPage:
         return self._mapping[selector]
 
 
-def test_find_element_with_healing_success() -> None:
+def test_find_locator_with_healing_success() -> None:
     page = DummyPage({"#ok": DummyElement(visible=True)})
-    loc = find_element_with_healing(page, ["#missing", "#ok"], timeout=0.5)
+    loc = find_locator_with_healing(page, ["#missing", "#ok"])
     assert loc.is_visible()
 
 
-def test_find_element_with_healing_failure() -> None:
+def test_find_locator_with_healing_failure() -> None:
     page = DummyPage({})
     with pytest.raises(RuntimeError):
-        find_element_with_healing(page, ["#nope1", "#nope2"], timeout=0.2)
+        find_locator_with_healing(page, ["#nope1", "#nope2"])
