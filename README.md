@@ -33,6 +33,27 @@ To use these settings in VS Code, open the repository folder; VS Code will
 prompt to install the recommended extensions and automatically apply the
 workspace settings.
 
+## Playwright migration (short summary)
+
+This repository was recently migrated from Selenium/Behave to Playwright + pytest for local browser-driven tests. Key points:
+
+- Browser-driven tests use Playwright via `pytest-playwright` and are marked with `@pytest.mark.local` to ensure they run only on developer machines.
+- CI explicitly excludes tests marked `local` (the CI workflow runs `pytest -m "not local"`).
+- Helper scripts and fixtures were added to assist local runs: `ci/list_local_tests.py` (collection helper), interactive auth-state helpers, and realistic Playwright context helpers in `utils/`.
+- The CI workflow avoids embedding multi-line Python heredocs; the collection helper is now in `ci/list_local_tests.py` so the workflow YAML is editor-friendly.
+
+Where to look next:
+
+- Local test example (headed):
+
+```
+TEST_USE_AUTH_STATE=1 TEST_LOGIN_USERNAME=dev@example.com TEST_LOGIN_PASSWORD=placeholder \
+  .venv/bin/python -m pytest -q tests/test_login_playwright.py -o playwright_browser=chromium --headed
+```
+
+If you'd like a detailed migration summary or the PR opened for you, tell me and I can draft the PR body and open it.
+
+
 ## Preparing Playwright browsers for CI
 
 Per project policy, Playwright/browser tests are strictly local-only and are
