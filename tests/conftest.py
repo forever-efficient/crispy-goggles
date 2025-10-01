@@ -5,8 +5,6 @@ import pytest
 from _pytest.runner import CallInfo
 import os
 import json
-import subprocess
-import sys
 
 
 def _playwright_cache_dirs() -> list:
@@ -14,7 +12,10 @@ def _playwright_cache_dirs() -> list:
     env = os.getenv("PLAYWRIGHT_BROWSERS_PATH")
     if env:
         return [Path(env)]
-    return [Path(os.path.expanduser("~")) / ".cache" / "ms-playwright", Path(os.path.expanduser("~")) / ".cache" / "playwright"]
+    return [
+        Path(os.path.expanduser("~")) / ".cache" / "ms-playwright",
+        Path(os.path.expanduser("~")) / ".cache" / "playwright",
+    ]
 
 
 def _playwright_browsers_present() -> bool:
@@ -33,18 +34,13 @@ def pytest_collection_modifyitems(config, items):
     This prevents the test harness from attempting to launch browsers in CI
     when maintainers have opted out of automatic browser installation.
     """
-    # Only enforce in CI environments
-    if not (os.getenv("CI") or os.getenv("GITHUB_ACTIONS") or os.getenv("GITLAB_CI")):
-        return
-
-    # Per project policy: never run Playwright/browser tests in CI. Mark any
-    # test that requests the pytest-playwright 'page' fixture as skipped so the
-    # CI test run cannot launch browsers or trigger installers.
-    skip_reason = "Playwright/browser tests are disabled in CI (local-only)"
+    # Mark tests that request the pytest-playwright 'page' fixture with a
+    # marker indicating they are local-only. We no longer gate this on CI
+    # environment variables; tests themselves decide to skip based on
+    # availability of local artifacts (like auth_state.json).
     for item in items:
         if "page" in getattr(item, "fixturenames", []):
-            item.add_marker(pytest.mark.skip(reason=skip_reason))
-
+            item.add_marker(pytest.mark.local)
 
 
 @pytest.hookimpl(tryfirst=True, hookwrapper=True)
@@ -95,40 +91,15 @@ def trace_on_failure(request):
 
 @pytest.fixture(autouse=True)
 def require_auth_state():
-    """Fail early if TEST_USE_AUTH_STATE is set but auth_state.json missing/invalid.
+    """If an `auth_state.json` exists, validate it contains an auth_token cookie.
 
-    This prevents running tests that expect an authenticated state when none is
-    available.
+    Historically this fixture created or enforced auth state via environment
+    variables; we now simply check the file if it exists. Tests that require an
+    authenticated context should explicitly skip when the file is absent.
     """
-    use_auth = os.getenv("TEST_USE_AUTH_STATE")
-    if not use_auth or use_auth == "0":
-        return
-
     auth_path = os.path.join(os.getcwd(), "auth_state.json")
     if not os.path.exists(auth_path):
-        # If running in CI, fail fast. Otherwise try to run the interactive
-        # helper to create the auth_state locally.
-        ci_indicators = [
-            os.getenv("CI"),
-            os.getenv("GITHUB_ACTIONS"),
-            os.getenv("GITLAB_CI"),
-        ]
-        if any(ci_indicators):
-            pytest.fail("TEST_USE_AUTH_STATE is set but auth_state.json not found in CI")
-
-        # Attempt to run the local interactive helper script to obtain auth state.
-        helper = Path(os.getcwd()) / "scripts" / "ensure_auth_state.py"
-        if helper.exists():
-            try:
-                print("auth_state.json not found — launching interactive helper to record it.")
-                # Use the current Python executable from the environment
-                python_exe = os.getenv("PYTHON", "python")
-                subprocess.check_call([python_exe, str(helper), "--output", auth_path])
-            except Exception as e:
-                pytest.fail(f"Failed to run interactive ensure_auth_state helper: {e}")
-
-        if not os.path.exists(auth_path):
-            pytest.fail("TEST_USE_AUTH_STATE is set but auth_state.json not found after interactive attempt")
+        return
 
     try:
         with open(auth_path, "r", encoding="utf-8") as f:

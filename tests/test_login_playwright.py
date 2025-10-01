@@ -14,9 +14,7 @@ def test_login_x_com(browser_type: Any) -> None:
     Skips in CI or when `auth_state.json` is not present.
     """
 
-    if os.getenv("CI") or os.getenv("GITHUB_ACTIONS"):
-        pytest.skip("Local-only login test skipped in CI")
-
+    # Skip if no auth state is available (local developer-only test)
     auth_path = os.path.join(os.getcwd(), "auth_state.json")
     if not os.path.exists(auth_path):
         pytest.skip("auth_state.json not found; skipping local login test")

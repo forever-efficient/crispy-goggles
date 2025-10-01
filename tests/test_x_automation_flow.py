@@ -186,6 +186,11 @@ def human_search_and_submit(page: Any, locator: Any, query: str = "colordo") -> 
         # We'll run a light micro-interaction after submitting instead.
         # Ensure input is focused/clicked before typing
         try:
+            # ensure the locator is visible/attached to avoid race conditions
+            try:
+                locator.wait_for(state="visible", timeout=2_000)
+            except Exception:
+                pass
             print(f"[debug][{time.time():.3f}] focusing search input")
             locator.click()
         except Exception:
@@ -196,12 +201,37 @@ def human_search_and_submit(page: Any, locator: Any, query: str = "colordo") -> 
         try:
             print(f"[debug][{time.time():.3f}] filling query: {query}")
             locator.fill(query)
+            # post-fill debug: read back value
+            try:
+                val = locator.input_value()
+                print(f"[debug][{time.time():.3f}] post-fill input_value: {val}")
+            except Exception:
+                try:
+                    val = locator.evaluate("el => el.value")
+                    print(f"[debug][{time.time():.3f}] post-fill eval value: {val}")
+                except Exception:
+                    print(
+                        f"[debug][{time.time():.3f}] post-fill value retrieval failed"
+                    )
         except Exception:
             print(
                 f"[debug][{time.time():.3f}] locator.fill failed; falling back to human_type"
             )
             # fall back to humanized typing when fill isn't available
             human_type(locator, query, min_delay=0.02, max_delay=0.06)
+            try:
+                val = locator.input_value()
+                print(f"[debug][{time.time():.3f}] post-human_type input_value: {val}")
+            except Exception:
+                try:
+                    val = locator.evaluate("el => el.value")
+                    print(
+                        f"[debug][{time.time():.3f}] post-human_type eval value: {val}"
+                    )
+                except Exception:
+                    print(
+                        f"[debug][{time.time():.3f}] post-human_type value retrieval failed"
+                    )
 
         try:
             locator.press("Enter")

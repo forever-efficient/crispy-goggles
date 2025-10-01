@@ -1,4 +1,3 @@
-import os
 import pytest
 from typing import Generator
 
@@ -12,8 +11,12 @@ def realistic_context(browser) -> Generator:
     This fixture is intended for local development. It will be skipped in CI
     environments per project policy.
     """
-    if os.getenv("CI") or os.getenv("GITHUB_ACTIONS") or os.getenv("GITLAB_CI"):
-        pytest.skip("realistic_context is disabled in CI (local-only)")
+    # Skip if Playwright browsers are not available in the environment.
+    # This keeps the fixture safe for CI where browsers may not be installed.
+    from tests.conftest import _playwright_browsers_present
+
+    if not _playwright_browsers_present():
+        pytest.skip("realistic_context requires Playwright browsers; skipping")
 
     ctx = create_realistic_context(browser)
     page = ctx.new_page()
