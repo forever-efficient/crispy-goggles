@@ -1,7 +1,18 @@
 import pytest
-from typing import Generator
+from typing import Generator, Any
 
-from utils.playwright_utils import create_realistic_context
+
+def _create_realistic_context(browser: Any):
+    """Create a realistic browser context for local testing.
+
+    This is a small, self-contained implementation extracted from the
+    previous `utils.playwright_utils.create_realistic_context` so the test
+    fixtures no longer depend on the removed `utils/` package.
+    """
+    # Example realistic options: enable javaScript, use a viewport, and
+    # preserve default permissions. Adjust as needed for your environment.
+    context = browser.new_context(viewport={"width": 1280, "height": 800})
+    return context
 
 
 @pytest.fixture
@@ -18,7 +29,7 @@ def realistic_context(browser) -> Generator:
     if not _playwright_browsers_present():
         pytest.skip("realistic_context requires Playwright browsers; skipping")
 
-    ctx = create_realistic_context(browser)
+    ctx = _create_realistic_context(browser)
     page = ctx.new_page()
     try:
         yield page
