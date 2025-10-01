@@ -115,7 +115,7 @@ def test_search_protests(browser_type: Any) -> None:
                     "After completing login, press Enter here to continue and save storage_state..."
                 )
 
-                    # Attempt to write storage_state from the current context to the alt_auth path.
+                # Attempt to write storage_state from the current context to the alt_auth path.
                 try:
                     # Playwright BrowserContext has a storage_state(path=...) method
                     ctx.storage_state(path=alt_auth)
