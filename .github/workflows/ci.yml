@@ -16,6 +16,8 @@ jobs:
         with:
           python-version: "3.11"
       - name: Install deps and run tests (skip local)
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
         run: |
           python -m venv .venv
           ./.venv/bin/python -m pip install -e '.[dev]'
